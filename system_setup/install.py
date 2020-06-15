@@ -3,10 +3,10 @@ import subprocess
 import os
 import shlex
 import logging
-
+import conffile
 
 logging.basicConfig(filename='/tmp/install.log',level=logging.DEBUG)
-
+home = os.environ["HOME"]
 
 def completed_process_to_string(completed_process):
     s = []
@@ -198,12 +198,174 @@ class Screen(Job):
         run(f"cp {dir_path}/screenrc ~/.screenrc")
 
 
+class Java(Job):
+
+    def __init__(self):
+        super().__init__()
+
+    def install(self):
+        pass
+        
+    def configure(self):
+        run("echo 'export JAVA_HOME=/usr/lib/jvm/default/' >> ~/.bashrc")
+
+class Hadoop2(Job):
+
+
+    def __init__(self, add_conf=True):
+        self.install_path = f"{home}/programfiles/hadoop-2.10.0/"
+        self.add_conf = add_conf
+        super().__init__()
+
+
+    def install(self):
+        if not os.path.exists(self.install_path):            
+            run("mkdir -p downloads")
+            run("cd downloads && wget https://mirrors.estointernet.in/apache/hadoop/common/hadoop-2.10.0/hadoop-2.10.0.tar.gz")
+            run("mkdir -p programfiles")
+            run("cd programfiles && tar -zxvf ../downloads/hadoop-2.10.0.tar.gz")
+
+    def configure(self):
+        self.conf = """export HADOOP_HOME=$HOME/programfiles/hadoop-2.10.0/
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_CLASSPATH=${JAVA_HOME}/lib/tools.jar
+export PATH=${JAVA_HOME}/bin:${PATH}"""
+        self.cf = conffile.Conf(self.conf, f"{home}/.bashrc")
+        
+        if self.add_conf:
+            otherhadoop = Hadoop3(add_conf=False)
+            if otherhadoop.cf.is_conf_present():
+                otherhadoop.cf.delete()
+
+            if not self.cf.is_conf_present():
+                self.cf.add()
+
+
+class Hadoop3(Job):
+
+
+    def __init__(self, add_conf=True):
+        self.install_path = f"{home}/programfiles/hadoop-3.2.1/"
+        self.add_conf = add_conf
+        super().__init__()
+
+
+    def install(self):
+        if not os.path.exists(self.install_path):            
+            run("mkdir -p downloads")
+            run("cd downloads && wget http://mirrors.estointernet.in/apache/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz")
+            run("mkdir -p programfiles")
+            run("cd programfiles && tar -zxvf ../downloads/hadoop-3.2.1.tar.gz")
+
+    def configure(self):
+        self.conf = """export HADOOP_HOME=$HOME/programfiles/hadoop-3.2.1/
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_CLASSPATH=${JAVA_HOME}/lib/tools.jar
+export PATH=${JAVA_HOME}/bin:${PATH}"""
+        self.cf = conffile.Conf(self.conf, f"{home}/.bashrc")
+        
+
+        if self.add_conf:        
+            otherhadoop = Hadoop2(add_conf=False)
+            if otherhadoop.cf.is_conf_present():
+                otherhadoop.cf.delete()
+
+            if not self.cf.is_conf_present():
+                self.cf.add()
+
+
+
+class Spark2(Job):
+
+    def __init__(self, add_conf=True):
+        self.install_path = f"{home}/programfiles/spark-2.4.6-bin-hadoop2.7/"
+        self.add_conf = add_conf
+        super().__init__()
+
+    def install(self):
+        if not os.path.exists(self.install_path):
+            url_location = ("https://mirrors.estointernet.in/apache/spark/"
+            "spark-2.4.6/spark-2.4.6-bin-hadoop2.7.tgz")
+            run("mkdir -p downloads")
+            run(f"""cd downloads && wget {url_location}""")
+            run("mkdir -p programfiles")
+            run(f"cd programfiles && tar -zxvf ../downloads/{url_location.split('/')[-1]}")
+
+
+    def configure(self):
+        self.conf = """export SPARK_DIST_CLASSPATH=$($HOME/programfiles/hadoop-2.10.0/bin/hadoop classpath)
+export SPARK_HOME=$HOME/programfiles/spark-2.4.6-bin-hadoop2.7/
+export PATH=$SPARK_HOME/bin:$PATH
+export PYTHONPATH=$SPARK_HOME/python:$PYTHONPATH
+export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH"""
+        self.cf = conffile.Conf(self.conf, f"{home}/.bashrc")
+
+        if self.add_conf:        
+            other = Spark3(add_conf=False)
+            if other.cf.is_conf_present():
+                other.cf.delete()
+
+            if not self.cf.is_conf_present():
+                self.cf.add()
+       
+
+class Spark3(Job):
+
+    def __init__(self, add_conf=True):
+        self.install_path = f"{home}/programfiles/spark-3.0.0-preview2-bin-hadoop3.2/"
+        self.add_conf = add_conf
+        super().__init__()
+
+    def install(self):
+        if not os.path.exists(self.install_path):
+            url_location = ("http://apachemirror.wuchna.com/spark/"
+            "spark-3.0.0-preview2/spark-3.0.0-preview2-bin-hadoop3.2.tgz")
+            run("mkdir -p downloads")
+            run(f"""cd downloads && wget {url_location}""")
+            run("mkdir -p programfiles")
+            run(f"cd programfiles && tar -zxvf ../downloads/{url_location.split('/')[-1]}")
+
+
+    def configure(self):
+        self.conf = """export SPARK_DIST_CLASSPATH=$($HOME/programfiles/hadoop-3.2.1/bin/hadoop classpath)
+export SPARK_HOME=$HOME/programfiles/spark-3.0.0-preview2-bin-hadoop3.2/
+export PATH=$SPARK_HOME/bin:$PATH
+export PYTHONPATH=$SPARK_HOME/python:$PYTHONPATH
+export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.8.1-src.zip:$PYTHONPATH"""
+        self.cf = conffile.Conf(self.conf, f"{home}/.bashrc")
+
+        if self.add_conf:        
+            other = Spark2(add_conf=False)
+            if other.cf.is_conf_present():
+                other.cf.delete()
+
+            if not self.cf.is_conf_present():
+                self.cf.add()
+       
+        
 def main():
     Dummy()
     # Editors()
     # Git()
     # Nvidia()
     # Screen()
+    # Java()
+    Hadoop2()
+    Spark2()
+    # Hadoop3()
+    # Spark3()
     pass
 
 

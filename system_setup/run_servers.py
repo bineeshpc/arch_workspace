@@ -19,13 +19,15 @@ def run_as_user(username, command):
     logging.debug(status)
 
 
+home = os.environ["HOME"]
 code_server_cmd = """/home/bineesh/.local/bin/code-server \
---auth none &"""
+--auth none"""
 
-jupyter_server_cmd = """/home/bineesh/anaconda3/bin/jupyter notebook \
---config=/home/bineesh/.jupyter/jupyter_notebook_config.py \
---no-browser \
---notebook-dir=/home/bineesh/agile/workspace &"""
+# invoke with bash -i so that the conf in bashrc
+# does not prevent source bashrc from executing
+# source bashrc works only on non interactive shells by default
+
+jupyter_server_cmd = f"bash -i /home/bineesh/agile/workspace/arch_workspace/system_setup/run_jupyter.sh"
 
 
 t1 = threading.Thread(target=run_as_user, args=("bineesh", code_server_cmd))
