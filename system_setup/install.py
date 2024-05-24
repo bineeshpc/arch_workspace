@@ -127,18 +127,34 @@ class Editors(Job):
         for editor in self.editors:
             run(f"{self.os.get_configure_cmd()} {editor}")
 
+
+class Surfshark(Job):
+    def __init__(self, os):
+        self.packagename = "surfshark-gui-bin"
+        self.os = OS(name=os).get_os()
+        super().__init__()
+
+    def install(self):
+        run_as_user("root", f"{self.os.get_install_cmd()} {self.packagename}")
+
+    def configure(self):
+        """
+        Check whether installed
+        """
+        run(f"{self.os.get_configure_cmd()} {self.packagename}")
+
 class Git(Job):
     def __init__(self):
         super().__init__()
 
     def install(self):
-        pass
+        run_as_user("root", "pacman --noconfirm -S git")
 
     def configure(self):
         """
         Configure the global names of git
         """
-        run("git config --global user.name \"Bineesh Chandrasekharan\"")
+        run("git config --global user.name \"Bineesh Panangat\"")
         run("git config --global user.email \"bineeshpc@gmail.com\"")
 
 
@@ -403,9 +419,10 @@ def main():
     args = parse_cmdline()
     # Dummy()
     Editors(args.os)
-    # Git()
+    Git()
     # Nvidia()
     Screen(args.os)
+    # Surfshark(args.os)
     # Java()
     # Hadoop2()
     # Spark2()
